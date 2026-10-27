@@ -9,6 +9,7 @@ from app.core.logger import logger
 # Import all models so SQLAlchemy Base knows about them before creating tables
 from app.model.user_model import User
 from app.model.filter_model import Filter
+from app.model.job_model import Job
 from app.router.clerk_webhook import router as clerk_router
 from app.router.filter_router import router as filter_router
 
