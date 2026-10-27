@@ -4,14 +4,16 @@ from functools import lru_cache
 
 # Points to the Backend/ directory
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
 class Settings(BaseSettings):
     APP_NAME: str = "FreelancerRadar"
     APP_VERSION: str = "1.0.0"
     MODE: str = "development"
-    DATABASE_URL: str
+    DATABASE_URL: str 
+    WEBHOOK_SECRET: str
 
     model_config = SettingsConfigDict(
-        env_file=(".env", ".env.local"),
+        env_file=(BASE_DIR / ".env", BASE_DIR / ".env.local", ".env", ".env.local"),
         env_file_encoding="utf-8",
         extra="ignore"
     )

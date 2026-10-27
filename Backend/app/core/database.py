@@ -8,7 +8,7 @@ connect_args = {"check_same_thread": False} if settings.DATABASE_URL.startswith(
 engine = create_engine(
     settings.DATABASE_URL,
     connect_args=connect_args,
-    echo=(settings.MODE == "development")
+    echo=False  # Set to False to keep console logs clean and hide raw SQL statements
 )
 
 # 2. Create the Session factory
