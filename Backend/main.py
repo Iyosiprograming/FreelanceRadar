@@ -8,7 +8,9 @@ from app.core.database import Base, engine
 from app.core.logger import logger
 # Import all models so SQLAlchemy Base knows about them before creating tables
 from app.model.user_model import User
+from app.model.filter_model import Filter
 from app.router.clerk_webhook import router as clerk_router
+from app.router.filter_router import router as filter_router
 
 
 # ---------------------------------------------------------------------------
@@ -63,6 +65,7 @@ app.add_middleware(
 # Register Routers
 # ---------------------------------------------------------------------------
 app.include_router(clerk_router)
+app.include_router(filter_router)
 
 
 # ---------------------------------------------------------------------------
