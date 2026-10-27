@@ -23,7 +23,7 @@ class JobService:
         - 1 query to check for existing jobs.
         - Automatically skips all duplicates.
         - 1 commit to insert all new jobs.
-        - Returns only newly added jobs for radar alerts.
+        - Returns newly added jobs for radar alerts.
         """
         if not jobs_data:
             return []
@@ -50,9 +50,6 @@ class JobService:
         try:
             self.db.add_all(new_jobs)
             self.db.commit()
-            for job in new_jobs:
-                self.db.refresh(job)
-
             logger.info(f"Successfully saved {len(new_jobs)} new jobs.")
             return new_jobs
 
