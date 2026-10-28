@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     WEBHOOK_SECRET: str 
     CLERK_SECRET_KEY: str 
     JWKS_PUBLIC_KEY: str 
+    REDIS_URL: str = "redis://localhost:6379/0"
 
     model_config = SettingsConfigDict(
         env_file=(BASE_DIR / ".env", BASE_DIR / ".env.local", ".env", ".env.local"),

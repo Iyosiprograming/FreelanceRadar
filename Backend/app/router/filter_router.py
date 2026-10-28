@@ -19,13 +19,13 @@ router = APIRouter(
     status_code=status.HTTP_201_CREATED,
     summary="Create filter for the current user (1 filter per user)"
 )
-def create_user_filter(
+async def create_user_filter(
     filter_data: AddFilterSchema,
     user_id: UUID = Depends(get_current_user_id),
     db: Session = Depends(get_db)
 ):
     service = FilterService(db)
-    return service.add_filter(filter_data, user_id)
+    return await service.add_filter(filter_data, user_id)
 
 
 @router.get(
@@ -52,13 +52,13 @@ def get_user_filter(
     response_model=FilterSchema,
     summary="Update filter properties (one, several, or all)"
 )
-def update_user_filter(
+async def update_user_filter(
     filter_data: UpdateFilterSchema,
     user_id: UUID = Depends(get_current_user_id),
     db: Session = Depends(get_db)
 ):
     service = FilterService(db)
-    return service.update_filter(filter_data, user_id)
+    return await service.update_filter(filter_data, user_id)
 
 
 @router.delete(
@@ -66,10 +66,10 @@ def update_user_filter(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete the current user's filter"
 )
-def delete_user_filter(
+async def delete_user_filter(
     user_id: UUID = Depends(get_current_user_id),
     db: Session = Depends(get_db)
 ):
     service = FilterService(db)
-    service.delete_filter(user_id)
+    await service.delete_filter(user_id)
     return None
