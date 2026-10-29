@@ -30,7 +30,12 @@ def test_user(db_session):
 
 def make_request(body: dict, headers: dict | None = None):
     mock = AsyncMock(spec=Request)
-    mock.headers = headers or {}
+    default_headers = {}
+    if settings.TELEGRAM_WEBHOOK_SECRET:
+        default_headers["X-Telegram-Bot-Api-Secret-Token"] = settings.TELEGRAM_WEBHOOK_SECRET
+    if headers:
+        default_headers.update(headers)
+    mock.headers = default_headers
     mock.json = AsyncMock(return_value=body)
     return mock
 
@@ -113,4 +118,3 @@ def test_webhook_start_with_nonexistent_user(db_session):
 
     assert res == {"ok": True}
     mock_send.assert_not_called()
-
