@@ -1,3 +1,4 @@
+import uuid
 import pytest
 from fastapi import HTTPException
 
@@ -100,3 +101,54 @@ def test_get_user_by_clerk_id_not_found_returns_none(user_service):
     """Verify get_user_by_clerk_id returns None if the Clerk ID does not exist."""
     found_user = user_service.get_user_by_clerk_id("clerk_does_not_exist")
     assert found_user is None
+
+
+# ===========================================================================
+# 3. Telegram Account Linking Tests
+# ===========================================================================
+
+def test_get_user_by_id_success(user_service):
+    user = user_service.create_user(AddUserSchema(clerk_id="clerk_id_test", email="idtest@example.com"))
+    found = user_service.get_user_by_id(user.id)
+    assert found is not None
+    assert found.id == user.id
+
+
+def test_link_telegram_success(user_service):
+    user = user_service.create_user(AddUserSchema(clerk_id="clerk_link_test", email="linktest@example.com"))
+    assert user.telegram_id is None
+
+    linked_user = user_service.link_telegram(user.id, 123456789)
+    assert linked_user is not None
+    assert linked_user.telegram_id == 123456789
+
+    # Verify persisted in database
+    refreshed = user_service.get_user_by_id(user.id)
+    assert refreshed.telegram_id == 123456789
+
+
+def test_link_telegram_rejects_transfer_if_telegram_id_already_used(user_service):
+    """Verify that a telegram_id already owned by another user cannot be transferred."""
+    user1 = user_service.create_user(AddUserSchema(clerk_id="clerk_u1", email="u1@example.com", telegram_id=999888))
+    user2 = user_service.create_user(AddUserSchema(clerk_id="clerk_u2", email="u2@example.com"))
+
+    # Attempt to transfer 999888 to user2 is rejected
+    result = user_service.link_telegram(user2.id, 999888)
+    assert result is None
+
+    # Verify user1 retains telegram_id and user2 remains unlinked
+    assert user_service.get_user_by_id(user1.id).telegram_id == 999888
+    assert user_service.get_user_by_id(user2.id).telegram_id is None
+
+
+def test_link_telegram_locked_when_already_linked(user_service):
+    """Verify that an account already linked cannot be overwritten by another Telegram account."""
+    user = user_service.create_user(AddUserSchema(clerk_id="clerk_locked", email="locked@example.com", telegram_id=111222))
+
+    # An attacker from a different telegram_id tries to link
+    result = user_service.link_telegram(user.id, 999999)
+    assert result is None
+
+    # Verify original telegram_id remains unchanged
+    refreshed = user_service.get_user_by_id(user.id)
+    assert refreshed.telegram_id == 111222
