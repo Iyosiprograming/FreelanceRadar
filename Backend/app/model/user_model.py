@@ -1,6 +1,6 @@
 import uuid
-from datetime import datetime,timezone
-from sqlalchemy import String, Integer, UUID, DateTime, Boolean,func
+from datetime import datetime, timezone
+from sqlalchemy import String, Integer, BigInteger, UUID, DateTime, Boolean, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -27,8 +27,8 @@ class User(Base):
         nullable=False
     )
 
-    telegram_id: Mapped[int|None] = mapped_column(
-        Integer,
+    telegram_id: Mapped[int | None] = mapped_column(
+        BigInteger,
         unique=True,
         nullable=True,
         default=None
