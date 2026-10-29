@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 import uvicorn
 from fastapi import FastAPI
@@ -17,6 +18,7 @@ from app.router.clerk_webhook import router as clerk_router
 from app.router.filter_router import router as filter_router
 from app.router.telegram_router import router as telegram_router
 from app.service.redis_service import RedisService
+from app.worker.job_radar_worker import start_radar_worker
 
 
 # ---------------------------------------------------------------------------
@@ -43,10 +45,23 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"Could not connect to Redis to rebuild cache: {e}")
 
+    # 3. Start background job radar worker (runs every 3 minutes)
+    radar_task = None
+    if settings.MODE != "testing":
+        radar_task = asyncio.create_task(start_radar_worker(interval_seconds=180))
+        logger.info("Background job radar worker started (running every 3 minutes).")
+
     yield
 
     # --- Shutdown ---
     logger.info("Shutting down application...")
+    if radar_task:
+        radar_task.cancel()
+        try:
+            await radar_task
+        except asyncio.CancelledError:
+            pass
+
     try:
         await redis_client.close()
         logger.info("Redis connection closed cleanly.")
