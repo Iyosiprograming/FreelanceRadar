@@ -36,6 +36,16 @@ def test_format_job_alert():
     assert "<i>Build a fast &amp; scalable" in formatted
 
 
+def test_format_job_alert_includes_posted_time():
+    alert = {
+        "title": "React Frontend Dev",
+        "published_at": "2026-11-16T10:00:00+00:00"
+    }
+    formatted = format_job_alert(alert)
+    assert "🕒 <b>Posted:</b>" in formatted
+    assert "2026-11-16 10:00 UTC" in formatted
+
+
 def test_format_job_alert_defaults():
     alert = {}
     formatted = format_job_alert(alert)

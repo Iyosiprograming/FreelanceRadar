@@ -1,7 +1,53 @@
+from datetime import datetime, timezone
+from typing import Any
 import html
 from app.core.logger import logger
 from app.service.alert_queue import AlertQueue
 from app.service.telegram_service import send_telegram_message
+
+
+def format_published_time(val: Any) -> str | None:
+    """Formats a datetime, ISO string, or timestamp into human-readable relative + UTC format."""
+    if not val:
+        return None
+    dt = None
+    if isinstance(val, datetime):
+        dt = val
+    elif isinstance(val, (int, float)):
+        try:
+            dt = datetime.fromtimestamp(val, tz=timezone.utc)
+        except (ValueError, OSError):
+            return None
+    elif isinstance(val, str):
+        try:
+            dt = datetime.fromisoformat(val)
+        except ValueError:
+            try:
+                dt = datetime.strptime(val.split(".")[0], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+            except ValueError:
+                return val
+
+    if not dt:
+        return str(val)
+
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+
+    now = datetime.now(timezone.utc)
+    diff = now - dt
+    total_seconds = max(0, int(diff.total_seconds()))
+
+    if total_seconds < 60:
+        rel = "Just now"
+    elif total_seconds < 3600:
+        rel = f"{total_seconds // 60}m ago"
+    elif total_seconds < 86400:
+        rel = f"{total_seconds // 3600}h ago"
+    else:
+        rel = f"{total_seconds // 86400}d ago"
+
+    time_str = dt.strftime("%Y-%m-%d %H:%M UTC")
+    return f"{time_str} ({rel})"
 
 
 def format_job_alert(alert: dict) -> str:
@@ -13,6 +59,8 @@ def format_job_alert(alert: dict) -> str:
     skills = html.escape(", ".join(skills_list)) if skills_list else "None specified"
     score = alert.get("match_score", 0)
 
+    posted_text = format_published_time(alert.get("published_at"))
+
     lines = [
         f"🎯 <b>New Job Match ({score}% fit)</b>",
         "",
@@ -21,6 +69,9 @@ def format_job_alert(alert: dict) -> str:
         f"💰 <b>Budget:</b> {budget}",
         f"🛠 <b>Matched Skills:</b> {skills}",
     ]
+    if posted_text:
+        lines.append(f"🕒 <b>Posted:</b> {html.escape(posted_text)}")
+
     if snippet:
         lines.extend(["", f"📝 <i>{snippet}</i>"])
 

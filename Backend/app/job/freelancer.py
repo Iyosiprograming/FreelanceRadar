@@ -74,7 +74,7 @@ def normalize_freelancer_project(raw: dict) -> AddJobSchema | None:
         ]
 
         # Convert Unix timestamp safely
-        published_at = _parse_timestamp(raw.get("submitdate"))
+        published_at = _parse_timestamp(raw.get("submitdate") or raw.get("time_submitted"))
 
         return AddJobSchema(
             external_id=str(project_id),

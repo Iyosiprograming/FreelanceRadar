@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime
 from uuid import UUID
 from sqlalchemy.orm import Session
 from sqlalchemy import select
@@ -23,6 +24,7 @@ class MatchResult:
     description_snippet: str
     match_score: int
     matched_skills: list[str]
+    published_at: str | None = None
 
 
 def make_description_snippet(description: str | None, max_length: int = 160) -> str:
@@ -33,6 +35,64 @@ def make_description_snippet(description: str | None, max_length: int = 160) -> 
     if len(clean) <= max_length:
         return clean
     return clean[:max_length].rsplit(" ", 1)[0] + "..."
+
+
+CURRENCY_SYMBOLS: dict[str, str] = {
+    "USD": "$",
+    "EUR": "€",
+    "GBP": "£",
+    "INR": "₹",
+    "AUD": "A$",
+    "CAD": "C$",
+    "NZD": "NZ$",
+    "SGD": "S$",
+    "JPY": "¥",
+    "CNY": "¥",
+    "BRL": "R$",
+    "HKD": "HK$",
+    "CHF": "CHF ",
+    "PHP": "₱",
+    "PKR": "₨",
+    "BDT": "৳",
+    "NGN": "₦",
+    "ZAR": "R ",
+    "AED": "AED ",
+}
+
+
+def _format_amount(amount: float, symbol: str) -> str:
+    """Formats amount cleanly: adds commas (e.g. 12,500), omits .00 if integer."""
+    if amount == int(amount):
+        formatted_num = f"{int(amount):,}"
+    else:
+        formatted_num = f"{amount:,.2f}"
+    return f"{symbol}{formatted_num}"
+
+
+def format_budget_display(
+    budget_min: float | None,
+    budget_max: float | None,
+    currency_code: str | None = "USD",
+    project_type: str = "fixed"
+) -> str:
+    """
+    Formats the actual budget using the proper currency symbol (e.g. ₹1,500 - ₹12,500 or $50 - $100 / hr)
+    without mismatched currency text like '$1500 INR'.
+    """
+    code = (currency_code or "USD").strip().upper()
+    symbol = CURRENCY_SYMBOLS.get(code, f"{code} ")
+    rate_suffix = " / hr" if project_type == "hourly" else ""
+
+    if budget_min is not None and budget_max is not None:
+        if budget_min == budget_max:
+            return f"{_format_amount(budget_min, symbol)}{rate_suffix}"
+        return f"{_format_amount(budget_min, symbol)} - {_format_amount(budget_max, symbol)}{rate_suffix}"
+    elif budget_max is not None:
+        return f"Up to {_format_amount(budget_max, symbol)}{rate_suffix}"
+    elif budget_min is not None:
+        return f"From {_format_amount(budget_min, symbol)}{rate_suffix}"
+    else:
+        return "Budget not specified"
 
 
 class MatchingService:
@@ -80,13 +140,20 @@ class MatchingService:
         if score < 50:
             return None  # Discard if under 50%
 
-        # Format budget display
-        if job.budget_min and job.budget_max:
-            budget_text = f"${job.budget_min:g} - ${job.budget_max:g} {job.currency or 'USD'}"
-        elif job.budget_max:
-            budget_text = f"Up to ${job.budget_max:g} {job.currency or 'USD'}"
-        else:
-            budget_text = "Budget not specified"
+        # Format actual budget display with proper symbol and commas
+        budget_text = format_budget_display(
+            budget_min=job.budget_min,
+            budget_max=job.budget_max,
+            currency_code=job.currency,
+            project_type=job.project_type,
+        )
+
+        published_str = None
+        if job.published_at:
+            if isinstance(job.published_at, datetime):
+                published_str = job.published_at.isoformat()
+            else:
+                published_str = str(job.published_at)
 
         return MatchResult(
             user_id=user.id,
@@ -99,6 +166,7 @@ class MatchingService:
             description_snippet=make_description_snippet(job.description),
             match_score=score,
             matched_skills=list(matched_skills),
+            published_at=published_str,
         )
 
     async def find_matches_for_job(self, job: Job) -> list[MatchResult]:

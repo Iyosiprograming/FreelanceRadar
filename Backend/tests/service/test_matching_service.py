@@ -5,7 +5,7 @@ import pytest
 from app.model.user_model import User
 from app.model.filter_model import Filter
 from app.model.job_model import Job
-from app.service.matching_service import MatchingService, make_description_snippet
+from app.service.matching_service import MatchingService, make_description_snippet, format_budget_display
 
 
 def run_sync(coro):
@@ -100,6 +100,19 @@ def test_make_description_snippet_empty_or_none():
     """Verify empty/None descriptions return fallback text."""
     assert make_description_snippet(None) == "No description provided."
     assert make_description_snippet("") == "No description provided."
+
+
+# ===========================================================================
+# Budget Formatting Tests
+# ===========================================================================
+
+def test_format_budget_display_currencies():
+    assert format_budget_display(1500, 12500, "INR", "fixed") == "₹1,500 - ₹12,500"
+    assert format_budget_display(250, 750, "USD", "fixed") == "$250 - $750"
+    assert format_budget_display(30, 60, "EUR", "hourly") == "€30 - €60 / hr"
+    assert format_budget_display(None, 500, "USD", "fixed") == "Up to $500"
+    assert format_budget_display(100, None, "GBP", "hourly") == "From £100 / hr"
+    assert format_budget_display(None, None) == "Budget not specified"
 
 
 # ===========================================================================
