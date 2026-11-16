@@ -12,27 +12,43 @@ def format_job_alert(alert: dict) -> str:
     skills_list = alert.get("matched_skills", [])
     skills = html.escape(", ".join(skills_list)) if skills_list else "None specified"
     score = alert.get("match_score", 0)
-    url = alert.get("url", "https://www.freelancer.com")
 
-    return (
-        f"🎯 <b>New Job Match ({score}% fit)</b>\n\n"
-        f"📌 <b>{title}</b>\n"
-        f"💰 <b>Budget:</b> {budget}\n"
-        f"🛠 <b>Matched Skills:</b> {skills}\n\n"
-        f"📝 {snippet}\n\n"
-        f'👉 <a href="{url}">View Job on Freelancer</a>'
-    )
+    lines = [
+        f"🎯 <b>New Job Match ({score}% fit)</b>",
+        "",
+        f"📌 <b>{title}</b>",
+        "",
+        f"💰 <b>Budget:</b> {budget}",
+        f"🛠 <b>Matched Skills:</b> {skills}",
+    ]
+    if snippet:
+        lines.extend(["", f"📝 <i>{snippet}</i>"])
+
+    return "\n".join(lines)
 
 
 async def send_job_alert(alert: dict) -> bool:
-    """Formats and sends a single job alert to the user's Telegram."""
+    """Formats and sends a single job alert to the user's Telegram with an inline button."""
     telegram_id = alert.get("telegram_id")
     if not telegram_id:
         logger.warning(f"Alert missing telegram_id: {alert}")
         return False
 
     message = format_job_alert(alert)
-    return await send_telegram_message(telegram_id, message)
+    url = alert.get("url") or "https://www.freelancer.com"
+    reply_markup = {
+        "inline_keyboard": [
+            [
+                {"text": "👉 View Job on Freelancer", "url": url}
+            ]
+        ]
+    }
+    return await send_telegram_message(
+        chat_id=telegram_id,
+        text=message,
+        parse_mode="HTML",
+        reply_markup=reply_markup,
+    )
 
 
 async def process_next_alert(alert_queue: AlertQueue | None = None, timeout: int = 1) -> bool:

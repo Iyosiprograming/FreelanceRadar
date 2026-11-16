@@ -131,5 +131,6 @@ class MatchingService:
             if match:
                 matches.append(match)
 
-        logger.info(f"Job [{job.external_id}] matched {len(matches)} user(s) with >= 50% fit.")
+        if matches:
+            logger.info(f"Job [{job.external_id}] matched {len(matches)} user(s): '{job.title[:40]}'")
         return matches

@@ -33,7 +33,7 @@ def test_format_job_alert():
     # Check details
     assert "$500 - $1,000 USD" in formatted
     assert "python, fastapi" in formatted
-    assert 'href="https://www.freelancer.com/projects/123"' in formatted
+    assert "<i>Build a fast &amp; scalable" in formatted
 
 
 def test_format_job_alert_defaults():
@@ -53,7 +53,8 @@ def test_send_job_alert_success():
     alert = {
         "telegram_id": 987654,
         "title": "Test Title",
-        "match_score": 90
+        "match_score": 90,
+        "url": "https://www.freelancer.com/projects/987654"
     }
 
     with patch("app.service.telegram_sender.send_telegram_message", new_callable=AsyncMock) as mock_send:
@@ -62,8 +63,11 @@ def test_send_job_alert_success():
 
     assert res is True
     mock_send.assert_called_once()
-    assert mock_send.call_args[0][0] == 987654
-    assert "Test Title" in mock_send.call_args[0][1]
+    assert mock_send.call_args[1]["chat_id"] == 987654
+    assert "Test Title" in mock_send.call_args[1]["text"]
+    assert mock_send.call_args[1]["parse_mode"] == "HTML"
+    assert "reply_markup" in mock_send.call_args[1]
+    assert mock_send.call_args[1]["reply_markup"]["inline_keyboard"][0][0]["url"] == "https://www.freelancer.com/projects/987654"
 
 
 def test_process_next_alert_empty_queue():

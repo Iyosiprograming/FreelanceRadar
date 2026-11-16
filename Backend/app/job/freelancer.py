@@ -128,7 +128,7 @@ async def fetch_freelancer_jobs(limit: int = 50) -> list[AddJobSchema]:
                 if job:
                     normalized_jobs.append(job)
 
-            logger.info(f"Successfully fetched & normalized {len(normalized_jobs)} jobs from Freelancer.com")
+            logger.info(f"Fetched {len(normalized_jobs)} jobs from Freelancer.com")
             return normalized_jobs
 
     except httpx.HTTPStatusError as e:

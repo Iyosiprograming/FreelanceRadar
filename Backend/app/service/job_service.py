@@ -44,13 +44,13 @@ class JobService:
                 new_jobs.append(Job(**job_item.model_dump()))
 
         if not new_jobs:
-            logger.info("No new jobs to save (all were duplicates).")
+            logger.info("No new jobs (all duplicates).")
             return []
 
         try:
             self.db.add_all(new_jobs)
             self.db.commit()
-            logger.info(f"Successfully saved {len(new_jobs)} new jobs.")
+            logger.info(f"Saved {len(new_jobs)} new jobs.")
             return new_jobs
 
         except IntegrityError:

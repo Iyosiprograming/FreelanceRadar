@@ -31,7 +31,7 @@ async def run_radar_cycle(db: Session, alert_queue: AlertQueue | None = None) ->
     job_service = JobService(db)
     new_jobs = job_service.save_bulk_jobs(fetched_jobs)
     if not new_jobs:
-        logger.info("Radar cycle: All fetched jobs are already in database.")
+        logger.info(f"Radar: Checked {len(fetched_jobs)} jobs. No new projects.")
         return {"fetched": len(fetched_jobs), "new_jobs": 0, "matches_found": 0, "alerts_sent": 0}
 
     # 3. Match new jobs against active user filters

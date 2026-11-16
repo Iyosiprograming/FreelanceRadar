@@ -44,15 +44,12 @@ class RedisService:
         keys = [f"skill:{kw.strip().lower()}" for kw in keywords if kw.strip()]
         if not keys:
             return set()
-        matched_users = await self.redis.sunion(*keys)
-        logger.debug(f"Matched {len(matched_users)} user(s) for skills: {keywords}")
-        return matched_users
+        return await self.redis.sunion(*keys)
 
     # 5. On server restart: Clear Redis and reload all users from the database
     async def rebuild_cache_from_db(self, db: Session) -> None:
-        logger.info("Rebuilding Redis keyword index from database...")
         await self.redis.flushdb()  # Wipes any old/stale keys
         filters = db.scalars(select(Filter)).all()
         for f in filters:
             await self.save_user_keywords(f.user_id, f.skills)
-        logger.info(f"Redis cache rebuild complete: Indexed {len(filters)} filter(s).")
+        logger.info(f"Redis cache initialized ({len(filters)} filters loaded).")

@@ -4,8 +4,8 @@ import colorlog
 handler = colorlog.StreamHandler()
 handler.setFormatter(
     colorlog.ColoredFormatter(
-        '%(log_color)s[%(asctime)s] [%(levelname)-8s] [%(name)s]%(reset)s: %(message_log_color)s%(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S',
+        '%(log_color)s%(asctime)s [%(levelname)s]%(reset)s %(message_log_color)s%(message)s',
+        datefmt='%H:%M:%S',
         log_colors={
             'DEBUG':    'cyan',
             'INFO':     'green',
@@ -24,5 +24,5 @@ handler.setFormatter(
 
 logger = logging.getLogger("FreelanceRadar")
 logger.addHandler(handler)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 logger.propagate = False
