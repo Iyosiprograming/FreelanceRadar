@@ -126,3 +126,58 @@ def test_normalize_ignores_negative_budgets():
     assert job.budget_min is None
     assert job.budget_max is None
 
+
+def test_fetch_freelancer_jobs_query_parameters():
+    """Verify that fetch_freelancer_jobs requests newest jobs and never passes reverse_sort."""
+    from unittest.mock import patch
+    from app.job.freelancer import fetch_freelancer_jobs
+
+    def run_sync(coro):
+        try:
+            coro.send(None)
+        except StopIteration as e:
+            return e.value
+
+    class FakeResponse:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {
+                "result": {
+                    "projects": [
+                        {
+                            "id": 12345,
+                            "title": "Test Project",
+                            "type": "fixed",
+                        }
+                    ]
+                }
+            }
+
+    class FakeClient:
+        def __init__(self, *args, **kwargs):
+            self.captured_params = None
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            pass
+
+        async def get(self, url, params=None, headers=None):
+            self.captured_params = params
+            return FakeResponse()
+
+    fake_client = FakeClient()
+    with patch("app.job.freelancer.httpx.AsyncClient", return_value=fake_client):
+        jobs = run_sync(fetch_freelancer_jobs(limit=25))
+
+    assert len(jobs) == 1
+    assert jobs[0].external_id == "12345"
+    assert fake_client.captured_params is not None
+    assert fake_client.captured_params["limit"] == 25
+    assert "reverse_sort" not in fake_client.captured_params
+    assert fake_client.captured_params.get("sort_field") == "time_updated"
+
+

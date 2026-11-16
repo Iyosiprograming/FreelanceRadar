@@ -79,7 +79,7 @@ def normalize_freelancer_project(raw: dict) -> AddJobSchema | None:
         return AddJobSchema(
             external_id=str(project_id),
             title=str(title).strip(),
-            description=raw.get("preview_description") or raw.get("description"),
+            description=raw.get("description") or raw.get("preview_description"),
             url=url,
             project_type=project_type,
             budget_min=budget_min,
@@ -102,8 +102,8 @@ async def fetch_freelancer_jobs(limit: int = 50) -> list[AddJobSchema]:
     params = {
         "limit": limit,
         "sort_field": "time_updated",
-        "reverse_sort": "true",
         "job_details": "true",  # Ensures skill tags are included
+        "full_description": "true",  # Ensures full description is retrieved
     }
     headers = {
         "User-Agent": "FreelancerRadar/1.0",
