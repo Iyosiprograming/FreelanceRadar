@@ -2,9 +2,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 from app.core.config import settings, BASE_DIR
 
-# 1. Anchor relative SQLite URLs to the backend directory
+# 1. Normalize Render PostgreSQL URLs & anchor relative SQLite URLs
 db_url = settings.DATABASE_URL
-if db_url.startswith("sqlite:///./") or db_url == "sqlite:///test.db":
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+elif db_url.startswith("sqlite:///./") or db_url == "sqlite:///test.db":
     db_file = (BASE_DIR / "test.db").resolve().as_posix()
     db_url = f"sqlite:///{db_file}"
 

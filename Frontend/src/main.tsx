@@ -13,7 +13,14 @@ if (!clerkPubKey) {
 
 createRoot(document.getElementById('root')!).render(
   <BrowserRouter>
-    <ClerkProvider publishableKey={clerkPubKey}>
+    <ClerkProvider
+      publishableKey={clerkPubKey}
+      appearance={{
+        layout: {
+          unsafe_disableDevelopmentModeWarnings: true,
+        },
+      } as any}
+    >
       <StrictMode>
         <App />
       </StrictMode>

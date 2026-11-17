@@ -6,3 +6,19 @@
   }
 }
 
+/* Suppress Clerk development mode badge, floating pill, and branding */
+.cl-developmentBadge,
+[class*="developmentBadge"],
+.cl-devModeBadge,
+[class*="devModeBadge"],
+[data-localization-key="developmentMode"],
+.cl-internal-b3fm6y,
+div[data-testid="development-mode-badge"],
+div:has(> [data-localization-key="developmentMode"]),
+/* Hide 'Secured by Clerk' footer branding */
+.cl-footer,
+.cl-footerAction,
+[class*="footerAction"] {
+  display: none !important;
+}
+
