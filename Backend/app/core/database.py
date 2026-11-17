@@ -1,12 +1,17 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
-from app.core.config import settings
+from app.core.config import settings, BASE_DIR
 
-# 1. Create the engine
-connect_args = {"check_same_thread": False} if settings.DATABASE_URL.startswith("sqlite") else {}
+# 1. Anchor relative SQLite URLs to the backend directory
+db_url = settings.DATABASE_URL
+if db_url.startswith("sqlite:///./") or db_url == "sqlite:///test.db":
+    db_file = (BASE_DIR / "test.db").resolve().as_posix()
+    db_url = f"sqlite:///{db_file}"
+
+connect_args = {"check_same_thread": False} if db_url.startswith("sqlite") else {}
 
 engine = create_engine(
-    settings.DATABASE_URL,
+    db_url,
     connect_args=connect_args,
     echo=False  # Set to False to keep console logs clean and hide raw SQL statements
 )

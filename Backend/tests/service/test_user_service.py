@@ -152,3 +152,16 @@ def test_link_telegram_locked_when_already_linked(user_service):
     # Verify original telegram_id remains unchanged
     refreshed = user_service.get_user_by_id(user.id)
     assert refreshed.telegram_id == 111222
+
+
+def test_get_me_success(user_service):
+    user = user_service.create_user(AddUserSchema(clerk_id="clerk_me", email="me@example.com"))
+    me = user_service.get_me(user.id)
+    assert me.id == user.id
+    assert me.email == "me@example.com"
+
+
+def test_get_me_not_found(user_service):
+    with pytest.raises(HTTPException) as exc_info:
+        user_service.get_me(uuid.uuid4())
+    assert exc_info.value.status_code == 404

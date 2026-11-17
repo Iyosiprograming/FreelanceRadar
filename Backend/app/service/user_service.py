@@ -24,6 +24,15 @@ class UserService:
     def get_user_by_telegram_id(self, telegram_id: int) -> User | None:
         return self.db.scalars(select(User).where(User.telegram_id == telegram_id)).first()
 
+    def get_me(self, user_id: uuid.UUID) -> User:
+        user = self.get_user_by_id(user_id)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found."
+            )
+        return user
+
     def create_user(self, user_data: AddUserSchema) -> User:
         if self.get_user_by_clerk_id(user_data.clerk_id):
             raise HTTPException(

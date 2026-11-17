@@ -104,6 +104,62 @@ def test_webhook_start_with_invalid_uuid(db_session):
     mock_send.assert_not_called()
 
 
+def test_webhook_start_when_already_linked(db_session, test_user):
+    chat_id = 555666777
+    test_user.telegram_id = chat_id
+    db_session.commit()
+
+    payload = {
+        "message": {
+            "chat": {"id": chat_id},
+            "text": f"/start {test_user.id}"
+        }
+    }
+    req = make_request(payload)
+
+    with patch("app.router.telegram_router.send_telegram_message", new_callable=AsyncMock) as mock_send:
+        res = run_sync(telegram_webhook(req, db_session))
+
+    assert res["status"] == "already_linked"
+    assert "already connected" in mock_send.call_args.kwargs["text"]
+
+
+def test_webhook_bare_start_when_already_linked(db_session, test_user):
+    chat_id = 555666777
+    test_user.telegram_id = chat_id
+    db_session.commit()
+
+    payload = {
+        "message": {
+            "chat": {"id": chat_id},
+            "text": "/start"
+        }
+    }
+    req = make_request(payload)
+
+    with patch("app.router.telegram_router.send_telegram_message", new_callable=AsyncMock) as mock_send:
+        res = run_sync(telegram_webhook(req, db_session))
+
+    assert res["status"] == "already_linked"
+    assert "already connected" in mock_send.call_args.kwargs["text"]
+
+
+def test_webhook_bare_start_when_unlinked(db_session):
+    payload = {
+        "message": {
+            "chat": {"id": 999111},
+            "text": "/start"
+        }
+    }
+    req = make_request(payload)
+
+    with patch("app.router.telegram_router.send_telegram_message", new_callable=AsyncMock) as mock_send:
+        res = run_sync(telegram_webhook(req, db_session))
+
+    assert res["status"] == "unlinked"
+    assert "Welcome to FreelancerRadar" in mock_send.call_args.kwargs["text"]
+
+
 def test_webhook_start_with_nonexistent_user(db_session):
     payload = {
         "message": {
@@ -118,3 +174,59 @@ def test_webhook_start_with_nonexistent_user(db_session):
 
     assert res == {"ok": True}
     mock_send.assert_not_called()
+
+
+def test_webhook_start_when_already_linked(db_session, test_user):
+    chat_id = 555666777
+    test_user.telegram_id = chat_id
+    db_session.commit()
+
+    payload = {
+        "message": {
+            "chat": {"id": chat_id},
+            "text": f"/start {test_user.id}"
+        }
+    }
+    req = make_request(payload)
+
+    with patch("app.router.telegram_router.send_telegram_message", new_callable=AsyncMock) as mock_send:
+        res = run_sync(telegram_webhook(req, db_session))
+
+    assert res["status"] == "already_linked"
+    assert "already connected" in mock_send.call_args.kwargs["text"]
+
+
+def test_webhook_bare_start_when_already_linked(db_session, test_user):
+    chat_id = 555666777
+    test_user.telegram_id = chat_id
+    db_session.commit()
+
+    payload = {
+        "message": {
+            "chat": {"id": chat_id},
+            "text": "/start"
+        }
+    }
+    req = make_request(payload)
+
+    with patch("app.router.telegram_router.send_telegram_message", new_callable=AsyncMock) as mock_send:
+        res = run_sync(telegram_webhook(req, db_session))
+
+    assert res["status"] == "already_linked"
+    assert "already connected" in mock_send.call_args.kwargs["text"]
+
+
+def test_webhook_bare_start_when_unlinked(db_session):
+    payload = {
+        "message": {
+            "chat": {"id": 999111},
+            "text": "/start"
+        }
+    }
+    req = make_request(payload)
+
+    with patch("app.router.telegram_router.send_telegram_message", new_callable=AsyncMock) as mock_send:
+        res = run_sync(telegram_webhook(req, db_session))
+
+    assert res["status"] == "unlinked"
+    assert "Welcome to FreelancerRadar" in mock_send.call_args.kwargs["text"]

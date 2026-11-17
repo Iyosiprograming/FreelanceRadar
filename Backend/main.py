@@ -17,6 +17,7 @@ from app.model.job_model import Job
 from app.router.clerk_webhook import router as clerk_router
 from app.router.filter_router import router as filter_router
 from app.router.telegram_router import router as telegram_router
+from app.router.user_router import router as user_router
 from app.service.redis_service import RedisService
 from app.worker.job_radar_worker import start_radar_worker
 
@@ -102,6 +103,7 @@ app.add_middleware(
 app.include_router(clerk_router)
 app.include_router(filter_router)
 app.include_router(telegram_router)
+app.include_router(user_router)
 
 
 # ---------------------------------------------------------------------------
