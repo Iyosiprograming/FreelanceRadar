@@ -1,6 +1,6 @@
 // Frontend/src/Pages/DashboardPage.tsx
 import { useEffect, useState, useCallback } from 'react'
-import { UserButton, useAuth } from '@clerk/react'
+import { useAuth, useUser, SignOutButton } from '@clerk/react'
 import { Link } from 'react-router-dom'
 import {
   getFilter,
@@ -18,6 +18,7 @@ const BOT_USERNAME = import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'Job_nofticat
 
 export const DashboardPage = () => {
   const { getToken } = useAuth()
+  const { user: clerkUser } = useUser()
 
   const [user, setUser] = useState<UserProfile | null>(null)
   const [filter, setFilter] = useState<Filter | null>(null)
@@ -94,10 +95,8 @@ export const DashboardPage = () => {
     <div className="min-h-screen bg-[#0b0f17] text-slate-100">
       {/* Top Navigation */}
       <header className="border-b border-slate-800/80 bg-[#0e1626]/70 backdrop-blur-md sticky top-0 z-10 px-6 py-4 flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
-          </div>
+        <div className="flex items-center gap-2.5">
+          <img src="/favicon.svg" alt="FreelanceRadar" className="w-7 h-7" />
           <div>
             <h1 className="text-base font-bold text-white tracking-tight leading-none">
               FreelanceRadar
@@ -114,7 +113,26 @@ export const DashboardPage = () => {
             &larr; Home
           </Link>
           <div className="h-4 w-px bg-slate-800" />
-          <UserButton />
+          
+          {/* Profile pic & Sign Out button only (Clerk manage account modal removed) */}
+          <div className="flex items-center gap-2.5">
+            {clerkUser?.imageUrl ? (
+              <img
+                src={clerkUser.imageUrl}
+                alt={clerkUser.fullName || 'User'}
+                className="w-8 h-8 rounded-full border border-slate-700 object-cover"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-semibold text-slate-300">
+                👤
+              </div>
+            )}
+            <SignOutButton redirectUrl="/">
+              <button className="px-3 py-1.5 text-xs font-semibold text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-700 border border-slate-700 rounded-lg transition cursor-pointer">
+                Sign Out
+              </button>
+            </SignOutButton>
+          </div>
         </div>
       </header>
 
