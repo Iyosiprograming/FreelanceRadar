@@ -21,6 +21,7 @@ from app.router.telegram_router import router as telegram_router
 from app.router.user_router import router as user_router
 from app.service.redis_service import RedisService
 from app.worker.job_radar_worker import start_radar_worker
+from app.worker.cleanup_worker import start_cleanup_worker
 
 
 # ---------------------------------------------------------------------------
@@ -47,22 +48,26 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"Could not connect to Redis to rebuild cache: {e}")
 
-    # 3. Start background job radar worker (runs every 3 minutes)
+    # 3. Start background workers (radar worker every 3m, cleanup worker every 24h)
     radar_task = None
+    cleanup_task = None
     if settings.MODE != "testing":
         radar_task = asyncio.create_task(start_radar_worker(interval_seconds=180))
+        cleanup_task = asyncio.create_task(start_cleanup_worker(interval_seconds=86400, older_than_hours=24))
         logger.info("Background job radar worker started (running every 3 minutes).")
+        logger.info("Daily job cleanup worker started (running every 24 hours).")
 
     yield
 
     # --- Shutdown ---
     logger.info("Shutting down application...")
-    if radar_task:
-        radar_task.cancel()
-        try:
-            await radar_task
-        except asyncio.CancelledError:
-            pass
+    for task in (radar_task, cleanup_task):
+        if task:
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
 
     try:
         await redis_client.close()
@@ -86,11 +91,20 @@ app = FastAPI(
 # ---------------------------------------------------------------------------
 # CORS Middleware (Allows your Frontend to communicate with the Backend)
 # ---------------------------------------------------------------------------
+allowed_origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:3000",
+]
+if settings.FRONTEND_URL:
+    clean_frontend_url = settings.FRONTEND_URL.strip().rstrip("/")
+    if clean_frontend_url and clean_frontend_url not in allowed_origins:
+        allowed_origins.append(clean_frontend_url)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        settings.FRONTEND_URL
-    ],
+    allow_origins=allowed_origins,
+    allow_origin_regex=r"^https://.*\.vercel\.app$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

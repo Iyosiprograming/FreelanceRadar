@@ -75,6 +75,30 @@ def get_current_user_id(
     user_id = db.scalar(select(User.id).where(User.clerk_id == clerk_id))
 
     if not user_id:
+        # Just-In-Time Provisioning: If user is verified by Clerk but not yet in DB,
+        # fetch details from Clerk API and create them automatically.
+        try:
+            clerk_user = clerk_client.users.get(user_id=clerk_id)
+            email = None
+            if clerk_user and getattr(clerk_user, "email_addresses", None):
+                primary_id = getattr(clerk_user, "primary_email_address_id", None)
+                for email_obj in clerk_user.email_addresses:
+                    if getattr(email_obj, "id", None) == primary_id:
+                        email = getattr(email_obj, "email_address", None)
+                        break
+                if not email:
+                    email = getattr(clerk_user.email_addresses[0], "email_address", None)
+
+            if email:
+                from app.schema.user_schema import AddUserSchema
+                new_user = UserService(db).create_user(
+                    AddUserSchema(clerk_id=clerk_id, email=email)
+                )
+                logger.info(f"[AUTH] Auto-provisioned user {new_user.id} ({new_user.email}) from Clerk.")
+                return new_user.id
+        except Exception as e:
+            logger.warning(f"[AUTH] Could not auto-provision user {clerk_id}: {e}")
+
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found in local database."

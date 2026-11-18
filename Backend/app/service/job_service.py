@@ -1,5 +1,6 @@
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.exc import IntegrityError
 
 from app.core.logger import logger
@@ -61,3 +62,18 @@ class JobService:
             self.db.rollback()
             logger.error(f"Error bulk saving jobs: {e}")
             raise
+
+    def delete_old_jobs(self, hours: int = 24) -> int:
+        """
+        Deletes jobs older than the specified hours (default: 24h) to prevent database bloat.
+        Returns the number of deleted records.
+        """
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
+        stmt = delete(Job).where(Job.created_at < cutoff)
+        result = self.db.execute(stmt)
+        self.db.commit()
+
+        deleted_count = result.rowcount or 0
+        if deleted_count > 0:
+            logger.info(f"Cleaned up {deleted_count} jobs older than {hours} hours.")
+        return deleted_count
