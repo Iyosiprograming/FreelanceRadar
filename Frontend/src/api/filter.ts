@@ -36,10 +36,15 @@ const checkOk = async (res: Response) => {
 }
 
 export const getFilter = async (token?: string | null): Promise<Filter | null> => {
-  const res = await fetch(`${API_URL}/filter/`, { headers: getHeaders(token) })
-  if (res.status === 404) return null
-  await checkOk(res)
-  return res.json()
+  try {
+    const res = await fetch(`${API_URL}/filter/`, { headers: getHeaders(token) })
+    if (res.status === 404) return null
+    await checkOk(res)
+    return res.json()
+  } catch (err) {
+    console.warn('[getFilter] Could not load filter (new user or network offline):', err)
+    return null
+  }
 }
 
 export const createFilter = async (data: CreateFilterInput, token?: string | null): Promise<Filter> => {
