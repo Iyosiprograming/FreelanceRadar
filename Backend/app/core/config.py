@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     TELEGRAM_WEBHOOK_SECRET: str = ""
     TELEGRAM_WEBHOOK_URL: str = ""
     FRONTEND_URL: str = ""
+    ENABLE_DOCS: bool | None = None
 
     model_config = SettingsConfigDict(
         env_file=(BASE_DIR / ".env", BASE_DIR / ".env.local", ".env", ".env.local"),
