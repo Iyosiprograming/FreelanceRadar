@@ -4,6 +4,11 @@ import os
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+
+from app.core.limiter import limiter
 
 from app.core.config import settings
 from app.core.database import Base, engine, SessionLocal
@@ -80,13 +85,29 @@ async def lifespan(app: FastAPI):
 
 
 # ---------------------------------------------------------------------------
-# FastAPI App Initialization
+# FastAPI App Initialization (Swagger UI disabled in production or if ENABLE_DOCS=false)
 # ---------------------------------------------------------------------------
+show_docs = (
+    settings.ENABLE_DOCS
+    if settings.ENABLE_DOCS is not None
+    else settings.MODE != "production"
+)
+
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
-    lifespan=lifespan
+    lifespan=lifespan,
+    docs_url="/docs" if show_docs else None,
+    redoc_url="/redoc" if show_docs else None,
+    openapi_url="/openapi.json" if show_docs else None,
 )
+
+# ---------------------------------------------------------------------------
+# Rate Limiting (SlowAPI - Protects against DoS / brute-force attacks)
+# ---------------------------------------------------------------------------
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 # ---------------------------------------------------------------------------
 # CORS Middleware (Allows your Frontend to communicate with the Backend)
