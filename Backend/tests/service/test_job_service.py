@@ -151,3 +151,42 @@ def test_get_job_by_external_id_returns_none_when_missing(job_service):
     """Verify that querying a non-existent external_id returns None."""
     found_job = job_service.get_job_by_external_id("non_existent_external_id")
     assert found_job is None
+
+
+# ===========================================================================
+# 4. Old Job Cleanup (delete_old_jobs)
+# ===========================================================================
+
+def test_delete_old_jobs_removes_expired_records(job_service, db_session):
+    """Verify that jobs older than 24 hours are deleted while fresh jobs remain."""
+    from datetime import datetime, timedelta, timezone
+    from app.model.job_model import Job
+
+    # 1. Create a fresh job (created right now)
+    job_service.save_bulk_jobs([make_sample_job(external_id="fl_fresh_job")])
+
+    # 2. Create an old job (created 30 hours ago)
+    old_time = datetime.now(timezone.utc) - timedelta(hours=30)
+    old_job = Job(
+        external_id="fl_old_job",
+        title="Old Job",
+        url="https://www.freelancer.com/projects/fl_old_job",
+        project_type="fixed",
+        created_at=old_time,
+    )
+    db_session.add(old_job)
+    db_session.commit()
+
+    # 3. Run cleanup for jobs older than 24h
+    deleted_count = job_service.delete_old_jobs(hours=24)
+
+    assert deleted_count == 1
+    assert job_service.get_job_by_external_id("fl_old_job") is None
+    assert job_service.get_job_by_external_id("fl_fresh_job") is not None
+
+
+def test_delete_old_jobs_returns_zero_when_nothing_to_delete(job_service):
+    """Verify that cleanup returns 0 when no jobs exceed the retention threshold."""
+    job_service.save_bulk_jobs([make_sample_job(external_id="fl_current_job")])
+    deleted_count = job_service.delete_old_jobs(hours=24)
+    assert deleted_count == 0
