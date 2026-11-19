@@ -143,7 +143,7 @@ app.include_router(user_router)
 # ---------------------------------------------------------------------------
 # Root Health Check Endpoint
 # ---------------------------------------------------------------------------
-@app.get("/", tags=["Health"])
+@app.api_route("/", methods=["GET", "HEAD"], tags=["Health"])
 def health_check():
     return {
         "status": "healthy",
